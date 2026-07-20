@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 
 const steps = [
@@ -37,11 +38,17 @@ const HeroSection = () => {
               Listen, learn, and discuss your favorite reads.
             </p>
 
-            <button className="mt-8 flex items-center gap-3 rounded-xl bg-white px-7 py-4 text-xl font-semibold shadow-sm">
+            <Link
+              href="/books/new"
+              className="mt-8 flex w-fit items-center gap-3 rounded-xl bg-white px-7 py-4 text-xl font-semibold shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
+            >
               <Plus size={20} />
               Add new book
-            </button>
+            </Link>
+
           </div>
+
+          {/* Center Part - Desktop */}
 
           {/* Center Part - Desktop */}
           <div className="library-hero-illustration-desktop">
