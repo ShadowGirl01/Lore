@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import React, { useMemo, useState } from 'react'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm, useWatch, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { UploadSchema } from '@/lib/zod'
 import { BookUploadFormValues } from '@/types'
@@ -27,7 +27,6 @@ const UploadForm = () => {
     register,
     control,
     handleSubmit,
-    watch,
     resetField,
     formState: { errors },
   } = useForm<BookUploadFormValues>({
@@ -41,9 +40,10 @@ const UploadForm = () => {
     },
   })
 
-  const selectedFile = watch('file') as File | undefined
-  const selectedCover = watch('cover') as File | undefined
-  const selectedVoice = watch('voice')
+  const [selectedFile, selectedCover, selectedVoice] = useWatch({
+    control,
+    name: ['file', 'cover', 'voice'],
+  }) as [File | undefined, File | undefined, string]
 
   const fileName = useMemo(() => selectedFile?.name || '', [selectedFile])
   const coverName = useMemo(() => selectedCover?.name || '', [selectedCover])
