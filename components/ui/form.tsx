@@ -1,17 +1,40 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
+import { Controller, FormProvider, type Control, type FieldPath, type FieldValues, type UseFormReturn } from 'react-hook-form'
 
-type FormProps = React.FormHTMLAttributes<HTMLFormElement>
-function Form({ className, ...props }: FormProps) {
-  return <form className={cn('space-y-8', className)} {...props} />
-}
-
-type FormFieldProps = {
-  className?: string
+type FormProps<T extends FieldValues> = UseFormReturn<T> & {
   children: React.ReactNode
 }
 
-function FormField({ className, children }: FormFieldProps) {
+function Form<T extends FieldValues>({ children, ...props }: FormProps<T>) {
+  return <FormProvider {...props}>{children}</FormProvider>
+}
+
+type FormFieldProps<TFieldValues extends FieldValues> = {
+  control?: Control<TFieldValues>
+  name?: FieldPath<TFieldValues>
+  render?: (props: { field: any; fieldState: any }) => React.ReactNode
+  className?: string
+  children?: React.ReactNode
+}
+
+function FormField<TFieldValues extends FieldValues>({
+  control,
+  name,
+  render,
+  className,
+  children,
+}: FormFieldProps<TFieldValues>) {
+  if (control && name && render) {
+    return (
+      <Controller
+        control={control}
+        name={name}
+        render={({ field, fieldState }) => <>{render({ field, fieldState })}</>}
+      />
+    )
+  }
+
   return <div className={cn('space-y-2', className)}>{children}</div>
 }
 

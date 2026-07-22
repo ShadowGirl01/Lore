@@ -6,12 +6,12 @@ const isFile = (value: unknown): value is File =>
   typeof File !== 'undefined' && value instanceof File
 
 export const UploadSchema = z.object({
-  file: z
+  bookFile: z
     .any()
     .refine(isFile, 'PDF file is required')
     .refine((value) => isFile(value) && value.type === 'application/pdf', 'Only PDF files accepted')
     .refine((value) => isFile(value) && value.size <= MAX_PDF_SIZE, 'PDF must be 50MB or smaller'),
-  cover: z
+  coverImage: z
     .any()
     .optional()
     .refine(
