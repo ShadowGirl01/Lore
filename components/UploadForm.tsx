@@ -13,10 +13,16 @@ import { ACCEPTED_PDF_TYPES, ACCEPTED_IMAGE_TYPES, DEFAULT_VOICE } from '@/lib/c
 import FileUploader from './FileUploader'
 import VoiceSelector from './VoiceSelector'
 import LoadingOverlay from './LoadingOverlay'
+import { useAuth } from '@clerk/nextjs'
+import { toast } from 'sonner';
+import { checkBookExists } from '@/lib/actions/book.actions'
+import { useRouter } from 'next/navigation'
 
 const UploadForm = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isMounted, setIsMounted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const { userId } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     setIsMounted(true)
@@ -31,14 +37,39 @@ const UploadForm = () => {
     },
   })
 
-  const onSubmit = async (values: BookUploadFormValues) => {
-    setIsSubmitting(true)
-    console.log(values)
-    await new Promise((resolve) => setTimeout(resolve, 3000))
-    setIsSubmitting(false)
-  }
+  const onSubmit = async (data: BookUploadFormValues) => {
 
-  if (!isMounted) return null
+    if(!userId) {
+      return toast.error("Please login to upload books")
+    }
+
+    setIsSubmitting(true);
+
+    // PostHog -> Track Book Uploads...
+    
+    try {
+      const existsCheck = await checkBookExists(data.title);
+      if(existsCheck.exists && existsCheck.book) {
+        toast.error("Book with same title already exists.");
+        form.reset()
+        router.push(`/books/${existsCheck.book.slug}`)
+        return;
+}
+
+      const fileTitle = data.title.replace(/\s+/g, '-').toLowerCase();
+      const pdfFile = data.pdfFile[0];
+
+      const parsePDF = await parsePDFFile(pdfFile);
+    } catch (error) {
+      console.error(error);
+
+      toast.error("Failed to upload book. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!isMounted) return null;
 
   return (
     <>
@@ -128,3 +159,4 @@ const UploadForm = () => {
 }
 
 export default UploadForm
+
