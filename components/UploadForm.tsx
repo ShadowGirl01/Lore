@@ -17,6 +17,8 @@ import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner';
 import { checkBookExists } from '@/lib/actions/book.actions'
 import { useRouter } from 'next/navigation'
+import { parsePDFFile } from "@/lib/utils";
+import { upload } from '@vercel/blob/client'
 
 const UploadForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,123 +41,157 @@ const UploadForm = () => {
 
   const onSubmit = async (data: BookUploadFormValues) => {
 
-    if(!userId) {
+    if (!userId) {
       return toast.error("Please login to upload books")
     }
 
     setIsSubmitting(true);
 
     // PostHog -> Track Book Uploads...
-    
+
     try {
       const existsCheck = await checkBookExists(data.title);
-      if(existsCheck.exists && existsCheck.book) {
+      if (existsCheck.exists && existsCheck.book) {
         toast.error("Book with same title already exists.");
         form.reset()
         router.push(`/books/${existsCheck.book.slug}`)
         return;
-}
+      }
 
       const fileTitle = data.title.replace(/\s+/g, '-').toLowerCase();
       const pdfFile = data.pdfFile[0];
 
-      const parsePDF = await parsePDFFile(pdfFile);
-    } catch (error) {
-      console.error(error);
+      const parsedPDF = await parsePDFFile(pdfFile);
 
-      toast.error("Failed to upload book. Please try again later.");
-    } finally {
-      setIsSubmitting(false);
+      if (parsedPDF.content.length === 0) {
+        toast.error("Failed to parse PDF. Please try again with a different file.");
+        return;
+      }
+
+      const uploadedPdfBlob = await upload(fileTitle, pdfFile, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+        contentType: 'application/pdf'
+      });
+
+      let coverUrl: string;
+
+      if (data.coverImage && data.coverImage.length > 0) {
+        const coverFile = data.coverImage[0];
+        const uploadedCoverBlog = await upload(`${fileTitle}_cover_png`, coverFile, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+          contentType: coverFile.type
+        });
+        coverUrl = uploadedPdfBlob.url;
+      } else {
+        const response = await fetch(parsedPDF.cover)
+        const blob = await response.blob();
+
+        const uploadedCoverBlog = await upload(`${fileTitle}_cover.png`, blob, {
+          access: 'public',
+          handleUploadUrl: '/api/upload',
+          contentType: 'image/png'
+        });
+        coverUrl = uploadedPdfBlob.url;
+      }
     }
-  };
+    } catch (error) {
+    console.error(error);
 
-  if (!isMounted) return null;
+    toast.error("Failed to upload book. Please try again later.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-  return (
-    <>
-      {isSubmitting && <LoadingOverlay />}
+if (!isMounted) return null;
 
-      <div className="new-book-wrapper">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            {/* 1. PDF File Upload */}
-            <FileUploader
-              control={form.control}
-              name="bookFile"
-              label="Book PDF File"
-              acceptTypes={ACCEPTED_PDF_TYPES}
-              icon={Upload}
-              placeholder="Click to upload PDF"
-              hint="PDF file (max 50MB)"
-              disabled={isSubmitting}
-            />
+return (
+  <>
+    {isSubmitting && <LoadingOverlay />}
 
-            {/* 2. Cover Image Upload */}
-            <FileUploader
-              control={form.control}
-              name="coverImage"
-              label="Cover Image (Optional)"
-              acceptTypes={ACCEPTED_IMAGE_TYPES}
-              icon={ImageIcon}
-              placeholder="Click to upload cover image"
-              hint="Leave empty to auto-generate from PDF"
-              disabled={isSubmitting}
-            />
+    <div className="new-book-wrapper">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* 1. PDF File Upload */}
+          <FileUploader
+            control={form.control}
+            name="bookFile"
+            label="Book PDF File"
+            acceptTypes={ACCEPTED_PDF_TYPES}
+            icon={Upload}
+            placeholder="Click to upload PDF"
+            hint="PDF file (max 50MB)"
+            disabled={isSubmitting}
+          />
 
-            {/* 3. Title Input */}
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel className="form-label">Title</FormLabel>
-                  <FormControl>
-                    <Input className="form-input" placeholder="ex: Rich Dad Poor Dad" {...field} disabled={isSubmitting} />
-                  </FormControl>
-                  <FormMessage>{fieldState.error?.message}</FormMessage>
-                </FormItem>
-              )}
-            />
+          {/* 2. Cover Image Upload */}
+          <FileUploader
+            control={form.control}
+            name="coverImage"
+            label="Cover Image (Optional)"
+            acceptTypes={ACCEPTED_IMAGE_TYPES}
+            icon={ImageIcon}
+            placeholder="Click to upload cover image"
+            hint="Leave empty to auto-generate from PDF"
+            disabled={isSubmitting}
+          />
 
-            {/* 4. Author Input */}
-            <FormField
-              control={form.control}
-              name="author"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel className="form-label">Author Name</FormLabel>
-                  <FormControl>
-                    <Input className="form-input" placeholder="ex: Robert Kiyosaki" {...field} disabled={isSubmitting} />
-                  </FormControl>
-                  <FormMessage>{fieldState.error?.message}</FormMessage>
-                </FormItem>
-              )}
-            />
+          {/* 3. Title Input */}
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormLabel className="form-label">Title</FormLabel>
+                <FormControl>
+                  <Input className="form-input" placeholder="ex: Rich Dad Poor Dad" {...field} disabled={isSubmitting} />
+                </FormControl>
+                <FormMessage>{fieldState.error?.message}</FormMessage>
+              </FormItem>
+            )}
+          />
 
-            {/* 5. Voice Selector */}
-            <FormField
-              control={form.control}
-              name="voice"
-              render={({ field, fieldState }) => (
-                <FormItem>
-                  <FormLabel className="form-label">Choose Assistant Voice</FormLabel>
-                  <FormControl>
-                    <VoiceSelector value={field.value} onChange={field.onChange} disabled={isSubmitting} />
-                  </FormControl>
-                  <FormMessage>{fieldState.error?.message}</FormMessage>
-                </FormItem>
-              )}
-            />
+          {/* 4. Author Input */}
+          <FormField
+            control={form.control}
+            name="author"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormLabel className="form-label">Author Name</FormLabel>
+                <FormControl>
+                  <Input className="form-input" placeholder="ex: Robert Kiyosaki" {...field} disabled={isSubmitting} />
+                </FormControl>
+                <FormMessage>{fieldState.error?.message}</FormMessage>
+              </FormItem>
+            )}
+          />
 
-            {/* 6. Submit Button */}
-            <Button type="submit" className="form-btn" disabled={isSubmitting}>
-              Begin Synthesis
-            </Button>
-          </form>
-        </Form>
-      </div>
-    </>
-  )
+          {/* 5. Voice Selector */}
+          <FormField
+            control={form.control}
+            name="voice"
+            render={({ field, fieldState }) => (
+              <FormItem>
+                <FormLabel className="form-label">Choose Assistant Voice</FormLabel>
+                <FormControl>
+                  <VoiceSelector value={field.value} onChange={field.onChange} disabled={isSubmitting} />
+                </FormControl>
+                <FormMessage>{fieldState.error?.message}</FormMessage>
+              </FormItem>
+            )}
+          />
+
+          {/* 6. Submit Button */}
+          <Button type="submit" className="form-btn" disabled={isSubmitting}>
+            Begin Synthesis
+          </Button>
+        </form>
+      </Form>
+    </div>
+  </>
+)
 }
 
 export default UploadForm
