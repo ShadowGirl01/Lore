@@ -15,7 +15,7 @@ import VoiceSelector from './VoiceSelector'
 import LoadingOverlay from './LoadingOverlay'
 import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner';
-import { checkBookExists } from '@/lib/actions/book.actions'
+import { checkBookExists, createBook } from '@/lib/actions/book.actions'
 import { useRouter } from 'next/navigation'
 import { parsePDFFile } from "@/lib/utils";
 import { upload } from '@vercel/blob/client'
@@ -35,7 +35,9 @@ const UploadForm = () => {
     defaultValues: {
       title: '',
       author: '',
-      voice: DEFAULT_VOICE,
+      persona: '',
+      bookFile: undefined,
+      coverImage: undefined,
     },
   })
 
@@ -59,7 +61,7 @@ const UploadForm = () => {
       }
 
       const fileTitle = data.title.replace(/\s+/g, '-').toLowerCase();
-      const pdfFile = data.pdfFile[0];
+      const pdfFile = data.bookFile[0];
 
       const parsedPDF = await parsePDFFile(pdfFile);
 
@@ -94,8 +96,19 @@ const UploadForm = () => {
           contentType: 'image/png'
         });
         coverUrl = uploadedPdfBlob.url;
-      }
+      
     }
+
+    const book = await createBook({
+      clerkId: userId,
+      title: data.title,
+      author: data.author,
+      persona: data.persona,
+      fileURL: uploadedPdfBlob.url,
+      fileBlobKey: uploadedPdfBlob.pathname,
+      coverURL: coverUrl,
+      fileSize: pdfFile.size,
+    })
     } catch (error) {
     console.error(error);
 
@@ -171,7 +184,7 @@ return (
           {/* 5. Voice Selector */}
           <FormField
             control={form.control}
-            name="voice"
+            name="persona"
             render={({ field, fieldState }) => (
               <FormItem>
                 <FormLabel className="form-label">Choose Assistant Voice</FormLabel>

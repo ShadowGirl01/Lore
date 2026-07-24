@@ -1,6 +1,5 @@
 import { z } from 'zod'
-
-const MAX_PDF_SIZE = 50 * 1024 * 1024
+import { ACCEPTED_IMAGE_TYPES, ACCEPTED_PDF_TYPES, MAX_FILE_SIZE, MAX_IMAGE_SIZE } from '@/lib/constants'
 
 const isFile = (value: unknown): value is File =>
   typeof File !== 'undefined' && value instanceof File
@@ -8,18 +7,25 @@ const isFile = (value: unknown): value is File =>
 export const UploadSchema = z.object({
   bookFile: z
     .any()
-    .refine(isFile, 'PDF file is required')
-    .refine((value) => isFile(value) && value.type === 'application/pdf', 'Only PDF files accepted')
-    .refine((value) => isFile(value) && value.size <= MAX_PDF_SIZE, 'PDF must be 50MB or smaller'),
+    .refine((file) => isFile(file), 'Book PDF is required')
+    .refine((file) => isFile(file) && file.size <= MAX_FILE_SIZE, 'File size must be less than 50MB.')
+    .refine((file) => isFile(file) && ACCEPTED_PDF_TYPES.includes(file.type), 'Only .pdf format is supported.'),
   coverImage: z
     .any()
     .optional()
-    .refine(
-      (value) =>
-        !value || (isFile(value) && value.type.startsWith('image/')),
-      'Cover image must be a valid image file',
-    ),
-  title: z.string().min(1, 'Title is required'),
-  author: z.string().min(1, 'Author name is required'),
-  voice: z.enum(['dave', 'daniel', 'chris', 'rachel', 'sarah']),
+    .refine((file) => {
+      if (!file) return true
+      return isFile(file)
+    }, 'Cover image must be a file')
+    .refine((file) => {
+      if (!file) return true
+      return isFile(file) && file.size <= MAX_IMAGE_SIZE
+    }, 'Image size must be less than 10MB.')
+    .refine((file) => {
+      if (!file) return true
+      return isFile(file) && ACCEPTED_IMAGE_TYPES.includes(file.type)
+    }, 'Only .jpg, .jpeg, .png and .webp formats are supported.'),
+  title: z.string().min(1, 'Title is required').max(100, 'Title is too long'),
+  author: z.string().min(1, 'Author name is required').max(100, 'Author name is too long'),
+  persona: z.string().min(1, 'Please select a voice'),
 })
