@@ -15,7 +15,7 @@ import VoiceSelector from './VoiceSelector'
 import LoadingOverlay from './LoadingOverlay'
 import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner';
-import { checkBookExists, createBook } from '@/lib/actions/book.actions'
+import { checkBookExists, createBook, saveBookSegment } from '@/lib/actions/book.actions';
 import { useRouter } from 'next/navigation'
 import { parsePDFFile } from "@/lib/utils";
 import { upload } from '@vercel/blob/client'
@@ -61,7 +61,7 @@ const UploadForm = () => {
       }
 
       const fileTitle = data.title.replace(/\s+/g, '-').toLowerCase();
-      const pdfFile = data.bookFile[0];
+      const pdfFile = data.bookFile;
 
       const parsedPDF = await parsePDFFile(pdfFile);
 
@@ -78,8 +78,8 @@ const UploadForm = () => {
 
       let coverUrl: string;
 
-      if (data.coverImage && data.coverImage.length > 0) {
-        const coverFile = data.coverImage[0];
+      if (data.coverImage) {
+        const coverFile = data.coverImage;
         const uploadedCoverBlog = await upload(`${fileTitle}_cover_png`, coverFile, {
           access: 'public',
           handleUploadUrl: '/api/upload',
@@ -96,8 +96,7 @@ const UploadForm = () => {
           contentType: 'image/png'
         });
         coverUrl = uploadedPdfBlob.url;
-      
-    }
+      }
 
     const book = await createBook({
       clerkId: userId,
@@ -108,7 +107,24 @@ const UploadForm = () => {
       fileBlobKey: uploadedPdfBlob.pathname,
       coverURL: coverUrl,
       fileSize: pdfFile.size,
-    })
+    });
+
+    if (book.alreadyExist) {
+        toast.error("Book with same title already exists.");
+        form.reset()
+        router.push(`/books/${existsCheck.book.slug}`)
+        return;
+      }
+
+      const segments = await saveBookSegment(book.data._id, userId, parsedPDF.content);
+
+      if(!segments.success) {
+        toast.error("Failed to save book segments");
+        throw new Error("Failed to save book segments");
+      }
+
+      form.reset();
+      router.push('/');
     } catch (error) {
     console.error(error);
 
