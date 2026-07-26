@@ -1,14 +1,18 @@
-import HeroSection from '@/components/ui/HeroSection'
-import { sampleBooks } from '@/lib/constants'
-import BookCard from '@/components/ui/BookCard'
+import React from 'react';
+import HeroSection from '@/components/ui/HeroSection';
+import BookCard from '@/components/ui/BookCard';
+import { getAllBooks } from '@/lib/actions/book.actions';
 
-const page = () => {
+const Page = async () => {
+  const bookResults = await getAllBooks();
+  const books = bookResults.success ? bookResults.data ?? [] : [];
+
   return (
     <main className="wrapper-container">
       <HeroSection />
 
       <div className="library-books-grid">
-        {sampleBooks.map((book) => (
+        {books.map((book) => (
           <BookCard
             key={book._id}
             title={book.title}
@@ -19,7 +23,7 @@ const page = () => {
         ))}
       </div>
     </main>
-  )
-}
+  );
+};
 
-export default page
+export default Page;
