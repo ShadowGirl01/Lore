@@ -76,27 +76,38 @@ const UploadForm = () => {
         contentType: 'application/pdf'
       });
 
-      let coverUrl: string;
+    let coverUrl: string;
 
-      if (data.coverImage) {
-        const coverFile = data.coverImage;
-        const uploadedCoverBlog = await upload(`${fileTitle}_cover_png`, coverFile, {
-          access: 'public',
-          handleUploadUrl: '/api/upload',
-          contentType: coverFile.type
-        });
-        coverUrl = uploadedPdfBlob.url;
-      } else {
-        const response = await fetch(parsedPDF.cover)
-        const blob = await response.blob();
+if (data.coverImage) {
+  const coverFile = data.coverImage;
 
-        const uploadedCoverBlog = await upload(`${fileTitle}_cover.png`, blob, {
-          access: 'public',
-          handleUploadUrl: '/api/upload',
-          contentType: 'image/png'
-        });
-        coverUrl = uploadedPdfBlob.url;
-      }
+  const uploadedCoverBlob = await upload(
+    `${fileTitle}_cover.png`,
+    coverFile,
+    {
+      access: "public",
+      handleUploadUrl: "/api/upload",
+      contentType: coverFile.type,
+    }
+  );
+
+  coverUrl = uploadedCoverBlob.url;
+} else {
+  const response = await fetch(parsedPDF.cover);
+  const blob = await response.blob();
+
+  const uploadedCoverBlob = await upload(
+    `${fileTitle}_cover.png`,
+    blob,
+    {
+      access: "public",
+      handleUploadUrl: "/api/upload",
+      contentType: "image/png",
+    }
+  );
+
+  coverUrl = uploadedCoverBlob.url;
+}
 
     const book = await createBook({
       clerkId: userId,
