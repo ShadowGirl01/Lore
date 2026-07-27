@@ -4,9 +4,10 @@ import { NextResponse } from "next/server"
 import {auth} from "@clerk/nextjs/server"
 
 export async function POST(request: Request): Promise<NextResponse> {
-    const body = (await request.json()) as HandleUploadBody;
 
     try{
+        const body = (await request.json()) as HandleUploadBody;
+
         const jsonResponse = await handleUpload({ 
             token: process.env.BLOB_READ_WRITE_TOKEN,
             body,
@@ -38,7 +39,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json(jsonResponse)
     } catch (e) {
         const message = e instanceof Error ? e.message : "An unknown error occured";
-        const status = message.includes('Unauthorized') ? 401 : 500;
+        const status = message.includes('Unauthoriz1ed') ? 401 : 500;
+        console.error('Upload error', e);
+        const clientMessage = status === 401
         return NextResponse.json({ error: message }, { status });
     }
 }
