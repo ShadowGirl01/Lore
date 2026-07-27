@@ -406,7 +406,7 @@
     @apply absolute -bottom-1 -right-1 sm:-bottom-2 sm:-right-2;
   }
   .vapi-pulse-ring {
-    @apply absolute inset-0 w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] bg-white rounded-full opacity-50 animate-ping;
+    @apply absolute inset-0 w-[120px] h-[60px] sm:w-[130px] sm:h-[70px] bg-white rounded-full opacity-50 animate-ping pointer-events-none;
   }
   .vapi-mic-btn {
     @apply relative w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] cursor-pointer rounded-full flex items-center justify-center transition-all duration-300 border-0 bg-white;

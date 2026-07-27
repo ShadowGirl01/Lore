@@ -49,6 +49,13 @@ export interface IVoiceSession extends Document {
     updatedAt: Date;
 }
 
+export interface StartSessionResult {
+    success: boolean;
+    sessionId?: string;
+    error?: string;
+    maxDurationMinutes?: number;
+}
+
 // ============================================
 // FORM & INPUT TYPES
 // ============================================

@@ -10,6 +10,8 @@ const VapiControls = ({ book }: { book: IBook }) => {
     const { status, isActive, messages, currentMessage, currentUserMessage, duration, start, stop, clearErrors } =
         useVapi(book);
 
+    const showPulseRing = isActive && (status === 'thinking' || status === 'speaking');
+
     return (
         <>
 
@@ -27,12 +29,18 @@ const VapiControls = ({ book }: { book: IBook }) => {
                         />
 
                         <div className="vapi-mic-wrapper">
+                            {showPulseRing && <span className="vapi-pulse-ring" />}
                             <button
-                                type="button"
-                                className="vapi-mic-btn vapi-mic-btn-inactive shadow-md !w-[60px] !h-[60px]"
-                                aria-label="Mic off"
+                                onClick={isActive ? stop : start}
+                                disabled={status === 'connecting'}
+                                aria-label={isActive ? 'Stop microphone' : 'Start microphone'}
+                                className={`vapi-mic-btn shadow-md !w-[120px] !h-[60px] ${isActive ? 'vapi-mic-btn-active bg-[#212a3b]' : 'vapi-mic-btn-inactive bg-white'}`}
                             >
-                                <MicOff className="size-7 text-[#212a3b]" />
+                                {isActive ? (
+                                    <Mic className={`size-7 ${isActive ? 'text-white' : 'text-[#212a3b]'}`} />
+                                ) : (
+                                    <MicOff className="size-7 text-[#212a3b]" />
+                                )}
                             </button>
                         </div>
                     </div>
@@ -59,11 +67,14 @@ const VapiControls = ({ book }: { book: IBook }) => {
                 </div>
 
                 <div className="vapi-transcript-wrapper">
-                    <Transcript
+                    <div className="transcript-container min-h-[400px]">
+                        <Transcript
                         messages={messages}
                         currentMessage={currentMessage}
                         currentUserMessage={currentUserMessage}
                     />
+                    </div>
+                    
                 </div>
             </div>
         </>
