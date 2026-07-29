@@ -15,7 +15,7 @@ import VoiceSelector from './VoiceSelector'
 import LoadingOverlay from './LoadingOverlay'
 import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner';
-import { checkBookExists, createBook, saveBookSegment } from '@/lib/actions/book.actions';
+import { checkBookExists, createBook, saveBookSegments } from '@/lib/actions/book.actions';
 import { useRouter } from 'next/navigation'
 import { parsePDFFile } from "@/lib/utils";
 import { upload } from '@vercel/blob/client'
@@ -120,14 +120,14 @@ if (data.coverImage) {
       fileSize: pdfFile.size,
     });
 
-    if (book.alreadyExist) {
+    if (book.success && book.alreadyExists) {
         toast.error("Book with same title already exists.");
         form.reset()
         router.push(`/books/${existsCheck.book.slug}`)
         return;
       }
 
-      const segments = await saveBookSegment(book.data._id, userId, parsedPDF.content);
+      const segments = await saveBookSegments(book.data._id, userId, parsedPDF.content);
 
       if(!segments.success) {
         toast.error("Failed to save book segments");

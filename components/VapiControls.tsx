@@ -7,7 +7,7 @@ import { Mic, MicOff } from 'lucide-react';
 import Transcript from './Transcript';
 
 const VapiControls = ({ book }: { book: IBook }) => {
-    const { status, isActive, messages, currentMessage, currentUserMessage, duration, start, stop, clearErrors } =
+    const { status, isActive, messages, currentMessage, currentUserMessage, duration, start, stop, clearError } =
         useVapi(book);
 
     const showPulseRing = isActive && (status === 'thinking' || status === 'speaking');

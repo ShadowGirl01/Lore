@@ -56,6 +56,11 @@ export interface StartSessionResult {
     maxDurationMinutes?: number;
 }
 
+export interface EndSessionResult {
+    success: boolean;
+    error?: string;
+}
+
 // ============================================
 // FORM & INPUT TYPES
 // ============================================
