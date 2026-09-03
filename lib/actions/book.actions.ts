@@ -34,8 +34,9 @@ export const getAllBooks = async (search?: string) => {
     } catch (e) {
         console.error('Error connecting to database', e);
         return {
-            success: false, error: e
-        }
+    success: false,
+    error: e instanceof Error ? e.message : "Failed to create book",
+};
     }
 }
 
@@ -45,25 +46,35 @@ export const checkBookExists = async (title: string) => {
 
         const slug = generateSlug(title);
 
-        const existingBook = await Book.findOne({slug}).lean();
+        const existingBook = await Book.findOne({ slug })
+            .select("_id title slug")
+            .lean();
 
-        if(existingBook) {
+        if (existingBook) {
             return {
                 exists: true,
-                book: serializeData(existingBook)
-            }
+                book: {
+                    _id: existingBook._id.toString(),
+                    title: existingBook.title,
+                    slug: existingBook.slug,
+                },
+            };
         }
 
         return {
             exists: false,
-        }
+            book: null,
+        };
     } catch (e) {
-        console.error('Error checking book exists', e);
+        console.error("Error checking book exists:", e);
+
         return {
-            exists: false, error: e
-        }
+            exists: false,
+            book: null,
+            error: e instanceof Error ? e.message : "Failed to check book",
+        };
     }
-}
+};
 
 export const createBook = async (data: CreateBook) => {
     try {
@@ -73,18 +84,21 @@ export const createBook = async (data: CreateBook) => {
 
         const existingBook = await Book.findOne({slug}).lean();
 
-        if(existingBook) {
-            return {
-                success: true,
-                data: serializeData(existingBook),
-                alreadyExists: true,
-            }
-        }
-
+        if (existingBook) {
+    return {
+        success: true,
+        data: {
+            _id: existingBook._id.toString(),
+            title: existingBook.title,
+            slug: existingBook.slug,
+        },
+        alreadyExists: true,
+    };
+}
         // Todo: Check subscription limits before creating a book
 
         revalidatePath('/')
-        
+
         const { getUserPlan } = await import("@/lib/subscription.server");
         const { PLAN_LIMITS } = await import("@/lib/subscription-constants");
 
@@ -121,9 +135,9 @@ export const createBook = async (data: CreateBook) => {
         console.error('Error creating a book', e);
 
         return {
-            success: false,
-            error: e,
-        }
+    success: false,
+    error: e instanceof Error ? e.message : "Failed to create book",
+};
     }
 }
 
@@ -144,8 +158,9 @@ export const getBookBySlug = async (slug: string) => {
     } catch (e) {
         console.error('Error fetching book by slug', e);
         return {
-            success: false, error: e
-        }
+    success: false,
+    error: e instanceof Error ? e.message : "Failed to create book",
+};
     }
 }
 
@@ -173,9 +188,9 @@ export const saveBookSegments = async (bookId: string, clerkId: string, segments
         console.error('Error saving book segments', e);
 
         return {
-            success: false,
-            error: e,
-        }
+    success: false,
+    error: e instanceof Error ? e.message : "Failed to create book",
+};
     }
 }
 
