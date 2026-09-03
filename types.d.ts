@@ -116,3 +116,27 @@ export interface FileUploadFieldProps<T extends FieldValues> {
     placeholder: string;
     hint: string;
 }
+interface SessionCheckResult {
+    allowed: boolean;
+    currentCount: number;
+    limits: number;
+    plan: PopulatedPathsDocumentType;
+    maxDurationMinutes?: number;
+    error?: string;
+}
+
+// ============================================
+// VOICE SESSION ACTION RESULTS
+// ============================================
+
+export interface StartSessionResult {
+  success: boolean;
+  sessionId?: string;
+  error?: string;
+  maxDurationMinutes?: number;
+}
+
+export interface EndSessionResult {
+  success: boolean;
+  error?: string;
+}
